@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Alertas Lluvia Chile — Zonas de peligro cerca de ti</title>
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="disclaimer">
+    ⚠️ Prototipo con <b>datos de ejemplo</b>, no oficiales ni en tiempo real. Para información oficial de la emergencia por lluvias en Chile consulta
+    <a href="https://senapred.cl" target="_blank" rel="noopener">senapred.cl</a>, tu municipalidad, Bomberos (132) o Carabineros (133).
+  </div>
+
+  <header>
+    <h1>🌧️ Alertas Lluvia Chile</h1>
+    <p>Zonas de peligro, calles cerradas y noticias cerca de tu ubicación</p>
+  </header>
+
+  <div class="wrap">
+    <div class="controls">
+      <button id="btnUbicacion" class="primary">📍 Usar mi ubicación</button>
+      <select id="comunaSelect">
+        <option value="">O elige una comuna de referencia…</option>
+      </select>
+      <span id="status">Aún no se ha obtenido tu ubicación.</span>
+    </div>
+
+    <div id="riskBanner" class="risk-banner"></div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="section-title">Mapa de zonas reportadas</div>
+        <div id="map"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Zonas cercanas</div>
+        <div class="tabs">
+          <span class="tab active" data-tipo="todos">Todas</span>
+          <span class="tab" data-tipo="sitio_anegado">Anegamientos</span>
+          <span class="tab" data-tipo="calle_cerrada">Calles cerradas</span>
+          <span class="tab" data-tipo="vulnerabilidad">Vulnerabilidad</span>
+          <span class="tab" data-tipo="evacuacion">Evacuación</span>
+          <span class="tab" data-tipo="corte_energia">Cortes de energía</span>
+        </div>
+        <div id="zonaList" class="zona-list"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="section-title">Noticias y contexto de la emergencia</div>
+      <div id="noticiaList" class="noticia-list"></div>
+    </div>
+
+    <div class="contacts">
+      <div class="contact"><b>132</b><span>Bomberos</span></div>
+      <div class="contact"><b>133</b><span>Carabineros</span></div>
+      <div class="contact"><b>131</b><span>SAMU</span></div>
+      <div class="contact"><b>senapred.cl</b><span>Info oficial de emergencias</span></div>
+    </div>
+  </div>
+
+  <footer>
+    Proyecto de prototipo, sin afiliación oficial con SENAPRED ni organismos de gobierno. Verifica siempre la información en canales oficiales antes de tomar decisiones.
+  </footer>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

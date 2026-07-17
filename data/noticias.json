@@ -1,0 +1,42 @@
+[
+  {
+    "titulo": "SENAPRED mantiene Alerta Roja en comunas de la Región Metropolitana",
+    "resumen": "Producto del sistema frontal, se mantiene la alerta roja preventiva en comunas con riesgo de desborde de cauces y anegamiento de calles.",
+    "fuente": "SENAPRED (dato de ejemplo)",
+    "fecha": "2026-07-17T08:00:00-04:00",
+    "region": "Metropolitana",
+    "url": "https://senapred.cl"
+  },
+  {
+    "titulo": "Municipalidades habilitan albergues para familias evacuadas",
+    "resumen": "Varias comunas de la Región de Valparaíso y O'Higgins habilitaron albergues municipales para vecinos afectados por las lluvias.",
+    "fuente": "Prensa local (dato de ejemplo)",
+    "fecha": "2026-07-17T07:30:00-04:00",
+    "region": "Valparaíso",
+    "url": "https://senapred.cl"
+  },
+  {
+    "titulo": "Recomiendan evitar desplazamientos no esenciales durante el temporal",
+    "resumen": "Autoridades piden a la población posponer viajes no urgentes y evitar cruzar cauces o zonas anegadas a pie o en vehículo.",
+    "fuente": "Gobierno Regional (dato de ejemplo)",
+    "fecha": "2026-07-17T06:45:00-04:00",
+    "region": "Nacional",
+    "url": "https://senapred.cl"
+  },
+  {
+    "titulo": "Cortes de energía afectan a miles de clientes por caída de árboles",
+    "resumen": "Las empresas distribuidoras informan trabajos de restablecimiento en curso en varias comunas afectadas por el viento y la lluvia.",
+    "fuente": "Empresa distribuidora (dato de ejemplo)",
+    "fecha": "2026-07-17T07:15:00-04:00",
+    "region": "Metropolitana",
+    "url": "https://senapred.cl"
+  },
+  {
+    "titulo": "Bomberos realiza rescates en sectores anegados",
+    "resumen": "Equipos de emergencia han realizado evacuaciones preventivas de personas atrapadas por el aumento del nivel de agua en algunos sectores.",
+    "fuente": "Bomberos de Chile (dato de ejemplo)",
+    "fecha": "2026-07-17T05:50:00-04:00",
+    "region": "Biobío",
+    "url": "https://senapred.cl"
+  }
+]
