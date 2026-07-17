@@ -1,0 +1,22 @@
+[
+  {
+    "nombre": "Emol - Nacional",
+    "fuente": "Emol",
+    "url": "https://www.emol.com/rss/rss.asp?canal=1"
+  },
+  {
+    "nombre": "Cooperativa - Portada",
+    "fuente": "Cooperativa",
+    "url": "https://www.cooperativa.cl/noticias/site/tax/port/all/rss_1___1.xml"
+  },
+  {
+    "nombre": "BioBioChile - Nacional",
+    "fuente": "BioBioChile",
+    "url": "https://www.biobiochile.cl/lista/nacional/index.xml"
+  },
+  {
+    "nombre": "24Horas (TVN) - Nacional",
+    "fuente": "24 Horas",
+    "url": "https://www.24horas.cl/rss/portada.xml"
+  }
+]

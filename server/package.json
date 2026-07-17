@@ -1,0 +1,14 @@
+{
+  "name": "alertas-lluvia-chile-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor que agrega noticias en tiempo real de medios chilenos (RSS) filtradas por la emergencia de lluvias, y sirve el sitio estático.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "fast-xml-parser": "^4.5.0"
+  }
+}

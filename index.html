@@ -9,7 +9,7 @@
 </head>
 <body>
   <div class="disclaimer">
-    ⚠️ Prototipo con <b>datos de ejemplo</b>, no oficiales ni en tiempo real. Para información oficial de la emergencia por lluvias en Chile consulta
+    ⚠️ Las <b>zonas de peligro</b> del mapa son datos de ejemplo (no oficiales). Las <b>noticias</b> pueden provenir de RSS de medios reales cuando el backend está activo (ver estado abajo). Para información oficial de la emergencia por lluvias en Chile consulta
     <a href="https://senapred.cl" target="_blank" rel="noopener">senapred.cl</a>, tu municipalidad, Bomberos (132) o Carabineros (133).
   </div>
 
@@ -51,7 +51,13 @@
 
     <div class="panel" style="margin-top:14px">
       <div class="section-title">Noticias y contexto de la emergencia</div>
+      <p id="noticiasEstado" style="font-size:12px;color:var(--muted);margin:0 0 10px">Cargando noticias…</p>
       <div id="noticiaList" class="noticia-list"></div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="section-title">Fuentes oficiales</div>
+      <div id="fuentesList" class="noticia-list" style="max-height:none"></div>
     </div>
 
     <div class="contacts">

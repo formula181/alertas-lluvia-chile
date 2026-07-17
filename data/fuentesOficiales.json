@@ -1,0 +1,32 @@
+[
+  {
+    "nombre": "SENAPRED — Alertas vigentes",
+    "descripcion": "Declaraciones de alerta oficiales vigentes por región (roja, amarilla, temprana preventiva).",
+    "url": "https://senapred.cl/alertas-vigentes/"
+  },
+  {
+    "nombre": "SENAPRED en X (Twitter)",
+    "descripcion": "Comunicados y actualizaciones oficiales en tiempo real durante la emergencia.",
+    "url": "https://twitter.com/senapred"
+  },
+  {
+    "nombre": "Dirección Meteorológica de Chile",
+    "descripcion": "Pronósticos, avisos y alertas meteorológicas oficiales.",
+    "url": "https://www.meteochile.gob.cl"
+  },
+  {
+    "nombre": "Bomberos de Chile",
+    "descripcion": "Información oficial de emergencias y cobertura de cuerpos de bomberos.",
+    "url": "https://www.bomberos.cl"
+  },
+  {
+    "nombre": "Carabineros de Chile",
+    "descripcion": "Información de tránsito, cortes de vías y seguridad.",
+    "url": "https://www.carabineros.cl"
+  },
+  {
+    "nombre": "Gobierno de Chile — Emergencias",
+    "descripcion": "Portal oficial con información y recomendaciones ante emergencias.",
+    "url": "https://www.gob.cl/emergencias/"
+  }
+]

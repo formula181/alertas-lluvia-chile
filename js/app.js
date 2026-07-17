@@ -23,6 +23,7 @@ let map, userMarker, userAccuracyCircle;
 const zonaLayer = { markers: [] };
 let zonas = [];
 let noticias = [];
+let fuentesOficiales = [];
 let userLatLng = null;
 let tipoFiltro = "todos";
 
@@ -155,15 +156,66 @@ function renderNoticias() {
       const card = document.createElement("div");
       card.className = "card";
       const fecha = new Date(n.fecha);
+      const tituloHtml = n.url
+        ? `<a href="${n.url}" target="_blank" rel="noopener" style="color:inherit">${n.titulo}</a>`
+        : n.titulo;
       card.innerHTML = `
         <div class="top-row">
-          <h3>${n.titulo}</h3>
+          <h3>${tituloHtml}</h3>
         </div>
         <p>${n.resumen}</p>
         <div class="meta">${n.fuente} · ${n.region} · ${fecha.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}</div>
       `;
       list.appendChild(card);
     });
+}
+
+function renderFuentesOficiales() {
+  const list = document.getElementById("fuentesList");
+  if (!list) return;
+  list.innerHTML = "";
+  fuentesOficiales.forEach((f) => {
+    const a = document.createElement("a");
+    a.href = f.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.className = "card";
+    a.style.display = "block";
+    a.style.textDecoration = "none";
+    a.style.color = "inherit";
+    a.innerHTML = `
+      <div class="top-row"><h3>${f.nombre} ↗</h3></div>
+      <p>${f.descripcion}</p>
+    `;
+    list.appendChild(a);
+  });
+}
+
+async function cargarNoticias() {
+  const estadoEl = document.getElementById("noticiasEstado");
+  try {
+    const res = await fetch("/api/noticias", { signal: AbortSignal.timeout(6000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const payload = await res.json();
+    if (payload.ok && payload.noticias.length > 0) {
+      noticias = payload.noticias;
+      if (estadoEl) {
+        estadoEl.textContent = `🟢 Noticias en tiempo real de medios chilenos (actualizado ${new Date(
+          payload.actualizado
+        ).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}).`;
+      }
+      return;
+    }
+    throw new Error(payload.mensaje || "Backend sin noticias relevantes por ahora.");
+  } catch (err) {
+    // Backend no disponible (ej. sitio servido de forma 100% estática) o sin resultados: usar datos de ejemplo.
+    const res = await fetch("data/noticias.json");
+    noticias = await res.json();
+    if (estadoEl) {
+      estadoEl.textContent =
+        "🟡 Mostrando noticias de ejemplo (backend de RSS en tiempo real no disponible). Corre el servidor en /server para noticias reales.";
+    }
+  }
 }
 
 function actualizarRiesgo() {
@@ -256,14 +308,17 @@ function initTabs() {
 }
 
 async function cargarDatos() {
-  const [zonasRes, noticiasRes] = await Promise.all([
+  const [zonasRes, fuentesRes] = await Promise.all([
     fetch("data/zonas.json"),
-    fetch("data/noticias.json"),
+    fetch("data/fuentesOficiales.json"),
   ]);
   zonas = await zonasRes.json();
-  noticias = await noticiasRes.json();
+  fuentesOficiales = await fuentesRes.json();
   renderZonaMarkers();
   renderZonaList();
+  renderFuentesOficiales();
+
+  await cargarNoticias();
   renderNoticias();
 }
 
