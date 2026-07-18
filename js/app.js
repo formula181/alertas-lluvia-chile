@@ -74,6 +74,12 @@ function ocultarSugerencias() {
   list.innerHTML = "";
 }
 
+function renderSugerenciasError(mensaje) {
+  const list = document.getElementById("destinoSugerencias");
+  list.innerHTML = `<li class="empty">⚠️ ${mensaje} Puedes escribir la dirección completa y tocar "Calcular ruta" igual.</li>`;
+  list.classList.add("show");
+}
+
 function renderSugerencias(items) {
   const list = document.getElementById("destinoSugerencias");
   list.innerHTML = "";
@@ -107,12 +113,18 @@ function initAutocompleteDestino() {
       ocultarSugerencias();
       return;
     }
+    const list = document.getElementById("destinoSugerencias");
+    list.innerHTML = '<li class="empty">Buscando…</li>';
+    list.classList.add("show");
+
     debounceTimer = setTimeout(async () => {
       try {
         const items = await buscarSugerenciasDireccion(query);
         renderSugerencias(items);
       } catch (err) {
-        if (err.name !== "AbortError") ocultarSugerencias();
+        if (err.name === "AbortError") return;
+        console.error("Autocompletado de direcciones falló:", err);
+        renderSugerenciasError("No se pudo cargar sugerencias en este momento.");
       }
     }, 350);
   });
