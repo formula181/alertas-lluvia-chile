@@ -65,7 +65,7 @@ header p {
   margin-bottom: 12px;
 }
 
-button, select {
+button, select, input[type="text"] {
   appearance: none;
   border: 1px solid #223045;
   background: #101826;
@@ -85,10 +85,28 @@ button.primary {
 
 button:disabled { opacity: .6; cursor: not-allowed; }
 
-#status {
-  font-size: 13px;
+button.ghost {
+  background: transparent;
+  border-color: var(--border);
   color: var(--muted);
 }
+
+input[type="text"] {
+  flex: 1 1 240px;
+  min-width: 180px;
+  font-weight: 400;
+  cursor: text;
+}
+
+input[type="text"]::placeholder { color: var(--muted); }
+
+#status, .hint {
+  font-size: 13px;
+  color: var(--muted);
+  display: block;
+}
+
+.hint { margin: 2px 0 10px; }
 
 .risk-banner {
   border-radius: 12px;

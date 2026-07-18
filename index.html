@@ -29,6 +29,19 @@
 
     <div id="riskBanner" class="risk-banner"></div>
 
+    <div class="panel">
+      <div class="section-title">🧭 Planifica tu viaje</div>
+      <p class="hint">Ingresa a dónde quieres ir y revisa si el trayecto pasa cerca de alguna zona de peligro.</p>
+      <div class="controls">
+        <input id="destinoInput" type="text" placeholder="Dirección o lugar de destino (ej. Mall Plaza Vespucio)" />
+        <button id="btnCalcularRuta" class="primary">🧭 Calcular ruta</button>
+        <button id="btnLimpiarRuta" class="ghost" style="display:none">✕ Quitar ruta</button>
+      </div>
+      <span id="rutaEstado" class="hint"></span>
+      <div id="rutaBanner" class="risk-banner"></div>
+      <div id="rutaAlertasList" class="zona-list" style="max-height:none;margin-top:10px"></div>
+    </div>
+
     <div class="grid">
       <div class="panel">
         <div class="section-title">Mapa de zonas reportadas</div>

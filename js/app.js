@@ -9,6 +9,7 @@ const TIPO_LABEL = {
 const NIVEL_LABEL = { alto: "Riesgo alto", medio: "Riesgo medio", bajo: "Riesgo bajo" };
 
 const RADIO_ALERTA_KM = 3; // distancia dentro de la cual una zona se considera "cercana"
+const RUTA_ALERTA_KM = 0.6; // distancia al trayecto dentro de la cual una zona se considera "en tu ruta"
 const COMUNAS_FALLBACK = [
   { nombre: "Santiago Centro", lat: -33.4489, lng: -70.6693 },
   { nombre: "Maipú", lat: -33.5183, lng: -70.7581 },
@@ -19,7 +20,7 @@ const COMUNAS_FALLBACK = [
   { nombre: "Concepción", lat: -36.8201, lng: -73.0444 },
 ];
 
-let map, userMarker, userAccuracyCircle;
+let map, userMarker, userAccuracyCircle, rutaLayer, destinoMarker;
 const zonaLayer = { markers: [] };
 let zonas = [];
 let noticias = [];
@@ -37,6 +38,87 @@ function haversineKm(lat1, lng1, lat2, lng2) {
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// --- Ruta: geocodificación (Nominatim) y trazado (OSRM demo), ambos servicios públicos gratuitos ---
+
+async function geocodeDireccion(direccion) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=cl&q=${encodeURIComponent(direccion)}`;
+  const res = await fetch(url, { headers: { "Accept-Language": "es" }, signal: AbortSignal.timeout(8000) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (!data.length) throw new Error("No se encontró esa dirección.");
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), label: data[0].display_name };
+}
+
+async function obtenerRutaOSRM(origen, destino) {
+  const url = `https://router.project-osrm.org/route/v1/driving/${origen.lng},${origen.lat};${destino.lng},${destino.lat}?overview=full&geometries=geojson`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(9000) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.code !== "Ok" || !data.routes || !data.routes.length) throw new Error("No se encontró una ruta.");
+  const coords = data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+  return {
+    coords,
+    distanciaKm: data.routes[0].distance / 1000,
+    duracionMin: data.routes[0].duration / 60,
+    aproximada: false,
+  };
+}
+
+function rutaLineaRecta(origen, destino) {
+  return {
+    coords: [
+      [origen.lat, origen.lng],
+      [destino.lat, destino.lng],
+    ],
+    distanciaKm: haversineKm(origen.lat, origen.lng, destino.lat, destino.lng),
+    duracionMin: null,
+    aproximada: true,
+  };
+}
+
+// Proyección equirectangular a metros (suficientemente precisa a escala de ciudad) para
+// poder medir distancia punto-a-segmento sin resolver geometría esférica en cada tramo.
+function proyectarXY(lat, lng, refLat) {
+  const R = 6371000;
+  const radRefLat = (refLat * Math.PI) / 180;
+  return {
+    x: R * ((lng * Math.PI) / 180) * Math.cos(radRefLat),
+    y: R * ((lat * Math.PI) / 180),
+  };
+}
+
+function distanciaPuntoASegmentoMetros(p, a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const largoCuadrado = dx * dx + dy * dy;
+  if (largoCuadrado === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+  let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / largoCuadrado;
+  t = Math.max(0, Math.min(1, t));
+  const projX = a.x + t * dx;
+  const projY = a.y + t * dy;
+  return Math.hypot(p.x - projX, p.y - projY);
+}
+
+function distanciaPuntoARutaKm(punto, rutaCoords) {
+  const refLat = punto.lat;
+  const p = proyectarXY(punto.lat, punto.lng, refLat);
+  let min = Infinity;
+  for (let i = 0; i < rutaCoords.length - 1; i++) {
+    const a = proyectarXY(rutaCoords[i][0], rutaCoords[i][1], refLat);
+    const b = proyectarXY(rutaCoords[i + 1][0], rutaCoords[i + 1][1], refLat);
+    const d = distanciaPuntoASegmentoMetros(p, a, b);
+    if (d < min) min = d;
+  }
+  return min / 1000;
+}
+
+function calcularAlertasRuta(rutaCoords) {
+  return zonas
+    .map((z) => ({ ...z, distKmRuta: distanciaPuntoARutaKm({ lat: z.lat, lng: z.lng }, rutaCoords) }))
+    .filter((z) => z.distKmRuta <= RUTA_ALERTA_KM)
+    .sort((a, b) => a.distKmRuta - b.distKmRuta);
 }
 
 function nivelColor(nivel) {
@@ -98,6 +180,126 @@ function updateUserMarker(lat, lng, accuracy) {
   }
 
   map.setView([lat, lng], 13);
+}
+
+function dibujarRuta(coords) {
+  if (rutaLayer) map.removeLayer(rutaLayer);
+  rutaLayer = L.polyline(coords, { color: "#5ea2ff", weight: 5, opacity: 0.85 }).addTo(map);
+  map.fitBounds(rutaLayer.getBounds(), { padding: [30, 30] });
+}
+
+function marcarDestino(lat, lng, label) {
+  if (destinoMarker) map.removeLayer(destinoMarker);
+  destinoMarker = L.marker([lat, lng], {
+    icon: L.divIcon({ className: "", html: '<div style="font-size:26px;line-height:26px">🏁</div>', iconSize: [26, 26] }),
+  }).addTo(map);
+  destinoMarker.bindPopup(label || "Destino");
+}
+
+function limpiarRuta() {
+  if (rutaLayer) { map.removeLayer(rutaLayer); rutaLayer = null; }
+  if (destinoMarker) { map.removeLayer(destinoMarker); destinoMarker = null; }
+  document.getElementById("destinoInput").value = "";
+  document.getElementById("rutaEstado").textContent = "";
+  document.getElementById("rutaBanner").classList.remove("show", "alto", "medio", "bajo");
+  document.getElementById("rutaAlertasList").innerHTML = "";
+  document.getElementById("btnLimpiarRuta").style.display = "none";
+  if (userLatLng) map.setView([userLatLng.lat, userLatLng.lng], 13);
+}
+
+function renderRutaAlertas(lista) {
+  const list = document.getElementById("rutaAlertasList");
+  list.innerHTML = "";
+  lista.forEach((z) => {
+    const card = document.createElement("div");
+    card.className = `card ${z.nivel}`;
+    card.innerHTML = `
+      <div class="top-row">
+        <h3>${z.nombre}</h3>
+        <span class="badge">${NIVEL_LABEL[z.nivel]}</span>
+      </div>
+      <div class="top-row">
+        <span class="badge">${TIPO_LABEL[z.tipo] || z.tipo}</span>
+        <span class="dist">${z.distKmRuta < 0.1 ? "cruza tu ruta" : `${z.distKmRuta.toFixed(2)} km de tu ruta`}</span>
+      </div>
+      <p>${z.descripcion}</p>
+      <div class="reco">➡ ${z.recomendacion}</div>
+      <div class="meta">${z.comuna}, ${z.region} · Fuente: ${z.fuente}</div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function actualizarBannerRuta(lista, ruta) {
+  const banner = document.getElementById("rutaBanner");
+  banner.classList.remove("alto", "medio", "bajo");
+  banner.classList.add("show");
+  const hayAlto = lista.some((z) => z.nivel === "alto");
+  const hayMedio = lista.some((z) => z.nivel === "medio");
+  const nota = ruta.aproximada
+    ? " (ruta aproximada en línea recta — el servicio de trazado de rutas no respondió, así que esto no sigue las calles reales)."
+    : "";
+
+  if (hayAlto) {
+    const zona = lista.find((z) => z.nivel === "alto");
+    banner.classList.add("alto");
+    banner.innerHTML = `⚠️ Tu ruta pasa cerca de una zona de riesgo alto: <b>${zona.nombre}</b> (a ${zona.distKmRuta.toFixed(
+      2
+    )} km del trayecto). Considera una ruta alternativa.${nota}`;
+  } else if (hayMedio) {
+    const zona = lista.find((z) => z.nivel === "medio");
+    banner.classList.add("medio");
+    banner.innerHTML = `⚠️ Precaución: tu ruta pasa cerca de una zona de riesgo medio: <b>${zona.nombre}</b>.${nota}`;
+  } else {
+    banner.classList.add("bajo");
+    banner.innerHTML = `✅ No se detectaron zonas de riesgo alto o medio a menos de ${Math.round(
+      RUTA_ALERTA_KM * 1000
+    )} m de tu ruta (datos de ejemplo).${nota}`;
+  }
+}
+
+async function handleCalcularRuta() {
+  const input = document.getElementById("destinoInput");
+  const estadoEl = document.getElementById("rutaEstado");
+  const btn = document.getElementById("btnCalcularRuta");
+  const direccion = input.value.trim();
+
+  if (!direccion) {
+    estadoEl.textContent = "Escribe una dirección de destino.";
+    return;
+  }
+  if (!userLatLng) {
+    estadoEl.textContent = "Primero obtén tu ubicación o elige una comuna de referencia (arriba).";
+    return;
+  }
+
+  btn.disabled = true;
+  estadoEl.textContent = "Buscando dirección…";
+  try {
+    const destino = await geocodeDireccion(`${direccion}, Chile`);
+    marcarDestino(destino.lat, destino.lng, destino.label);
+
+    estadoEl.textContent = "Calculando ruta…";
+    let ruta;
+    try {
+      ruta = await obtenerRutaOSRM(userLatLng, destino);
+    } catch (err) {
+      ruta = rutaLineaRecta(userLatLng, destino);
+    }
+    dibujarRuta(ruta.coords);
+
+    const alertas = calcularAlertasRuta(ruta.coords);
+    renderRutaAlertas(alertas);
+    actualizarBannerRuta(alertas, ruta);
+
+    const durTxt = ruta.duracionMin ? `, ~${Math.round(ruta.duracionMin)} min` : "";
+    estadoEl.textContent = `Ruta a "${destino.label}": ${ruta.distanciaKm.toFixed(1)} km${durTxt}.`;
+    document.getElementById("btnLimpiarRuta").style.display = "";
+  } catch (err) {
+    estadoEl.textContent = `No se pudo calcular la ruta: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function zonasConDistancia() {
@@ -334,6 +536,12 @@ function main() {
     const [lat, lng] = e.target.value.split(",").map(Number);
     setStatus(`Usando ubicación aproximada de ${e.target.selectedOptions[0].textContent}.`);
     usarUbicacion(lat, lng, null);
+  });
+
+  document.getElementById("btnCalcularRuta").addEventListener("click", handleCalcularRuta);
+  document.getElementById("btnLimpiarRuta").addEventListener("click", limpiarRuta);
+  document.getElementById("destinoInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") handleCalcularRuta();
   });
 }
 
