@@ -12,7 +12,8 @@ Prototipo de app web que, a partir de la ubicación del usuario, muestra zonas d
 - El mapa (Leaflet + OpenStreetMap) muestra todas las zonas coloreadas por nivel de riesgo, y una lista lateral ordenada por cercanía, filtrable por tipo.
 - **Noticias**: si el backend (`/server`) está corriendo, el feed muestra noticias reales agregadas desde RSS de medios chilenos (Emol, Cooperativa, BioBioChile, 24 Horas), filtradas por palabras clave de la emergencia (lluvia, temporal, inundación, alerta roja, SENAPRED, evacuación, etc.). Si el backend no está disponible (ej. sitio servido 100% estático), cae automáticamente a `data/noticias.json` de ejemplo y lo indica en pantalla.
 - **Fuentes oficiales**: panel con enlaces directos a SENAPRED, Dirección Meteorológica, Bomberos, Carabineros y gob.cl/emergencias. No se scrapea contenido de estos sitios porque no exponen una API pública estable de datos estructurados en tiempo real (zonas de riesgo, calles cortadas) — por eso ese tipo de dato sigue siendo editable a mano en `data/zonas.json`.
-- **Planifica tu viaje**: el usuario ingresa una dirección de destino. La app geocodifica esa dirección (Nominatim/OpenStreetMap), traza la ruta desde su ubicación (OSRM, ruteo por calles reales) y calcula la distancia mínima entre cada zona de peligro y el trayecto. Si alguna zona de riesgo alto o medio queda a menos de 600 m de la ruta, se muestra un banner de alerta ("considera una ruta alternativa") y la tarjeta de esa zona en un panel aparte. Si el servicio de rutas no responde, cae a una línea recta entre origen y destino (avisando que es una aproximación) para que la función no quede inutilizable.
+- **Planifica tu viaje**: el usuario ingresa una dirección de destino, con autocompletado en vivo (Photon) a medida que escribe. La app geocodifica esa dirección (usa la sugerencia elegida, o Nominatim si el usuario escribe y da submit sin elegir sugerencia), traza la ruta desde su ubicación (OSRM, ruteo por calles reales) y calcula la distancia mínima entre cada zona de peligro y el trayecto. Si alguna zona de riesgo alto o medio queda a menos de 600 m de la ruta, se muestra un banner de alerta ("considera una ruta alternativa") y la tarjeta de esa zona en un panel aparte. Si el servicio de rutas no responde, cae a una línea recta entre origen y destino (avisando que es una aproximación) para que la función no quede inutilizable.
+- **Contactos de emergencia**: los números (Bomberos, Carabineros, SAMU) son enlaces `tel:` — al tocarlos en el celular abren directo la app de llamadas con el número marcado.
 
 ## Cómo correrlo localmente
 
@@ -41,15 +42,18 @@ El backend expone:
 
 ### Sobre "Planifica tu viaje" (geocodificación y rutas)
 
-Usa dos servicios públicos y gratuitos, sin necesidad de API key:
-- **[Nominatim](https://nominatim.org/release-docs/latest/api/Search/)** (OpenStreetMap) para convertir la dirección de destino en coordenadas.
+Usa tres servicios públicos y gratuitos, sin necesidad de API key:
+- **[Photon](https://photon.komoot.io/)** (komoot, basado en OpenStreetMap) para el autocompletado en vivo mientras el usuario escribe el destino (con debounce de 350 ms y mínimo 3 caracteres, para no disparar una consulta por cada tecla).
+- **[Nominatim](https://nominatim.org/release-docs/latest/api/Search/)** (OpenStreetMap) para resolver la dirección solo si el usuario escribe y presiona "Calcular ruta" sin elegir ninguna sugerencia del autocompletado.
 - **[OSRM demo server](http://project-osrm.org/)** (`router.project-osrm.org`) para calcular la ruta por calles reales.
 
-Ambos son servicios de demostración pensados para uso bajo/moderado, no para tráfico de producción alto — tienen límites de uso razonable (Nominatim pide ~1 solicitud/segundo) y pueden estar caídos o lentos sin aviso. Si este proyecto crece, conviene:
-1. Auto-hospedar Nominatim/OSRM, o
+Importante: la política de uso de Nominatim **prohíbe explícitamente** usarlo para autocompletado (consultas en cada tecla) — por eso el autocompletado usa Photon, que sí está pensado para ese caso de uso, y Nominatim solo se usa como fallback puntual (una consulta por click, no por tecla).
+
+Los tres son servicios de demostración pensados para uso bajo/moderado, no para tráfico de producción alto, y pueden estar caídos o lentos sin aviso. Si este proyecto crece, conviene:
+1. Auto-hospedar Photon/Nominatim/OSRM, o
 2. Migrar a un proveedor con SLA (Google Maps Platform, Mapbox, HERE), todos requieren API key y tienen costo por uso alto.
 
-Esta parte tampoco pude probarla contra los servidores reales desde el entorno donde se construyó (sin salida a internet), pero sí quedó validada con pruebas automatizadas que simulan las respuestas de Nominatim/OSRM (geocodificación, trazado de ruta, detección de zonas cercanas a la ruta, y el fallback a línea recta cuando el servicio de rutas falla) — igual conviene probarla una vez desplegada con conexión real.
+Esta parte tampoco pude probarla contra los servidores reales desde el entorno donde se construyó (sin salida a internet), pero sí quedó validada con pruebas automatizadas que simulan las respuestas de Photon/Nominatim/OSRM (autocompletado con debounce, geocodificación, trazado de ruta, detección de zonas cercanas a la ruta, y el fallback a línea recta cuando el servicio de rutas falla) — igual conviene probarla una vez desplegada con conexión real.
 
 ## Estructura
 

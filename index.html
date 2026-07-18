@@ -33,7 +33,10 @@
       <div class="section-title">🧭 Planifica tu viaje</div>
       <p class="hint">Ingresa a dónde quieres ir y revisa si el trayecto pasa cerca de alguna zona de peligro.</p>
       <div class="controls">
-        <input id="destinoInput" type="text" placeholder="Dirección o lugar de destino (ej. Mall Plaza Vespucio)" />
+        <div class="autocomplete-wrap">
+          <input id="destinoInput" type="text" autocomplete="off" placeholder="Dirección o lugar de destino (ej. Mall Plaza Vespucio)" />
+          <ul id="destinoSugerencias" class="suggestions"></ul>
+        </div>
         <button id="btnCalcularRuta" class="primary">🧭 Calcular ruta</button>
         <button id="btnLimpiarRuta" class="ghost" style="display:none">✕ Quitar ruta</button>
       </div>
@@ -74,10 +77,10 @@
     </div>
 
     <div class="contacts">
-      <div class="contact"><b>132</b><span>Bomberos</span></div>
-      <div class="contact"><b>133</b><span>Carabineros</span></div>
-      <div class="contact"><b>131</b><span>SAMU</span></div>
-      <div class="contact"><b>senapred.cl</b><span>Info oficial de emergencias</span></div>
+      <a class="contact" href="tel:132"><b>132</b><span>Bomberos</span></a>
+      <a class="contact" href="tel:133"><b>133</b><span>Carabineros</span></a>
+      <a class="contact" href="tel:131"><b>131</b><span>SAMU</span></a>
+      <a class="contact" href="https://senapred.cl" target="_blank" rel="noopener"><b>senapred.cl</b><span>Info oficial de emergencias</span></a>
     </div>
   </div>
 

@@ -108,6 +108,47 @@ input[type="text"]::placeholder { color: var(--muted); }
 
 .hint { margin: 2px 0 10px; }
 
+.autocomplete-wrap {
+  position: relative;
+  flex: 1 1 240px;
+  min-width: 180px;
+}
+
+.autocomplete-wrap input[type="text"] { width: 100%; }
+
+.suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 500;
+  display: none;
+}
+
+.suggestions.show { display: block; }
+
+.suggestions li {
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.suggestions li:hover, .suggestions li.active { background: var(--tileHover, #172231); }
+.suggestions li small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+.suggestions li.empty { color: var(--muted); cursor: default; }
+.suggestions li.empty:hover { background: transparent; }
+
 .risk-banner {
   border-radius: 12px;
   padding: 14px 16px;
@@ -237,9 +278,15 @@ input[type="text"]::placeholder { color: var(--muted); }
   border-radius: 10px;
   padding: 10px;
   text-align: center;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: .15s background ease, .15s transform ease;
 }
 
-.contact b { display: block; font-size: 18px; }
+.contact:hover, .contact:active { background: var(--tileHover, #172231); transform: translateY(-1px); }
+.contact b { display: block; font-size: 18px; color: var(--text); }
 .contact span { font-size: 12px; color: var(--muted); }
 
 footer {

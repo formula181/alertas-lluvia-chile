@@ -42,6 +42,86 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 
 // --- Ruta: geocodificación (Nominatim) y trazado (OSRM demo), ambos servicios públicos gratuitos ---
 
+// Photon (komoot) está pensado para autocompletado en vivo (a diferencia de Nominatim,
+// cuya política de uso prohíbe explícitamente enviar una consulta por cada tecla presionada).
+const CHILE_BBOX = "-76.0,-56.0,-66.0,-17.3"; // minLon,minLat,maxLon,maxLat — limita resultados a Chile
+let destinoSeleccionado = null; // {lat, lng, label} cuando el usuario elige una sugerencia
+let sugerenciasAbortController = null;
+
+async function buscarSugerenciasDireccion(query) {
+  if (sugerenciasAbortController) sugerenciasAbortController.abort();
+  sugerenciasAbortController = new AbortController();
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=es&limit=5&bbox=${CHILE_BBOX}`;
+  const res = await fetch(url, { signal: sugerenciasAbortController.signal });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return (data.features || []).map((f) => {
+    const p = f.properties || {};
+    const partes = [p.name, p.street, p.housenumber].filter(Boolean);
+    const principal = partes.length ? partes.join(" ") : p.street || p.name || "Ubicación";
+    const secundaria = [p.city, p.state, p.country].filter(Boolean).join(", ");
+    return {
+      label: secundaria ? `${principal}, ${secundaria}` : principal,
+      lat: f.geometry.coordinates[1],
+      lng: f.geometry.coordinates[0],
+    };
+  });
+}
+
+function ocultarSugerencias() {
+  const list = document.getElementById("destinoSugerencias");
+  list.classList.remove("show");
+  list.innerHTML = "";
+}
+
+function renderSugerencias(items) {
+  const list = document.getElementById("destinoSugerencias");
+  list.innerHTML = "";
+  if (items.length === 0) {
+    list.innerHTML = '<li class="empty">Sin resultados. Intenta con más detalle.</li>';
+    list.classList.add("show");
+    return;
+  }
+  items.forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = item.label;
+    li.addEventListener("click", () => {
+      destinoSeleccionado = item;
+      document.getElementById("destinoInput").value = item.label;
+      ocultarSugerencias();
+    });
+    list.appendChild(li);
+  });
+  list.classList.add("show");
+}
+
+function initAutocompleteDestino() {
+  const input = document.getElementById("destinoInput");
+  let debounceTimer = null;
+
+  input.addEventListener("input", () => {
+    destinoSeleccionado = null;
+    const query = input.value.trim();
+    if (debounceTimer) clearTimeout(debounceTimer);
+    if (query.length < 3) {
+      ocultarSugerencias();
+      return;
+    }
+    debounceTimer = setTimeout(async () => {
+      try {
+        const items = await buscarSugerenciasDireccion(query);
+        renderSugerencias(items);
+      } catch (err) {
+        if (err.name !== "AbortError") ocultarSugerencias();
+      }
+    }, 350);
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".autocomplete-wrap")) ocultarSugerencias();
+  });
+}
+
 async function geocodeDireccion(direccion) {
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=cl&q=${encodeURIComponent(direccion)}`;
   const res = await fetch(url, { headers: { "Accept-Language": "es" }, signal: AbortSignal.timeout(8000) });
@@ -199,6 +279,8 @@ function marcarDestino(lat, lng, label) {
 function limpiarRuta() {
   if (rutaLayer) { map.removeLayer(rutaLayer); rutaLayer = null; }
   if (destinoMarker) { map.removeLayer(destinoMarker); destinoMarker = null; }
+  destinoSeleccionado = null;
+  ocultarSugerencias();
   document.getElementById("destinoInput").value = "";
   document.getElementById("rutaEstado").textContent = "";
   document.getElementById("rutaBanner").classList.remove("show", "alto", "medio", "bajo");
@@ -274,9 +356,13 @@ async function handleCalcularRuta() {
   }
 
   btn.disabled = true;
+  ocultarSugerencias();
   estadoEl.textContent = "Buscando dirección…";
   try {
-    const destino = await geocodeDireccion(`${direccion}, Chile`);
+    const destino =
+      destinoSeleccionado && destinoSeleccionado.label === direccion
+        ? destinoSeleccionado
+        : await geocodeDireccion(`${direccion}, Chile`);
     marcarDestino(destino.lat, destino.lng, destino.label);
 
     estadoEl.textContent = "Calculando ruta…";
@@ -542,7 +628,9 @@ function main() {
   document.getElementById("btnLimpiarRuta").addEventListener("click", limpiarRuta);
   document.getElementById("destinoInput").addEventListener("keydown", (e) => {
     if (e.key === "Enter") handleCalcularRuta();
+    if (e.key === "Escape") ocultarSugerencias();
   });
+  initAutocompleteDestino();
 }
 
 document.addEventListener("DOMContentLoaded", main);
